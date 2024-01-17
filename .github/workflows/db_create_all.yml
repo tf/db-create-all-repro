@@ -2,7 +2,7 @@ name: db_create_all
 on: [push, pull_request]
 
 jobs:
-  repro:
+  broken:
     runs-on: ubuntu-latest
 
     services:
@@ -27,5 +27,35 @@ jobs:
     - run: |
         bundle install
 
+    - run: |
+        bin/rake db:create:all
+
+  workaround:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+        ports:
+          - 3306:3306
+        # Set health checks to wait until mysql has started
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.2
+    - run: |
+        bundle install
+
+    - run: |
+        bin/rake db:create
     - run: |
         bin/rake db:create:all
